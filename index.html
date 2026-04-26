@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蔵書管理プロトタイプ</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin: 20px; }
+        #reader { width: 100%; max-width: 500px; margin: auto; }
+        #result { margin-top: 20px; padding: 15px; border: 1px solid #ddd; display: none; }
+        .btn { padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h1>ISBNスキャナー</h1>
+    
+    <div id="reader"></div>
+
+    <div id="result">
+        <p>ISBN: <strong id="isbn-number"></strong></p>
+        <a id="library-link" href="" target="_blank" class="btn">横浜市立図書館で予約</a>
+        <br><br>
+        <button onclick="location.reload()">再スキャン</button>
+    </div>
+
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            // バーコードが読み取れた時の処理
+            console.log(`Scan result: ${decodedText}`);
+            
+            // ISBN（通常978から始まる13桁）であることを簡易チェック
+            if (decodedText.startsWith("978") || decodedText.length === 13 || decodedText.length === 10) {
+                // スキャンを停止
+                html5QrCode.stop().then(() => {
+                    document.getElementById("reader").style.display = "none";
+                    document.getElementById("result").style.display = "block";
+                    document.getElementById("isbn-number").innerText = decodedText;
+
+                    // 横浜市立図書館への検索URLを生成
+                    const libraryUrl = `https://www.lib.city.yokohama.lg.jp/licsxp-opac/WOpacMsgNewListToTcapSrv.do?ISBN-13=${decodedText}`;
+                    document.getElementById("library-link").href = libraryUrl;
+                });
+            }
+        };
+
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+        // 背面カメラ（environment）を使用して起動
+        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
+    </script>
+</body>
+</html>

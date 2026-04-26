@@ -3,53 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蔵書管理プロトタイプ</title>
+    <title>蔵書管理 - カーリル連携版</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; margin: 20px; }
-        #reader { width: 100%; max-width: 500px; margin: auto; }
-        #result { margin-top: 20px; padding: 15px; border: 1px solid #ddd; display: none; }
-        .btn { padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; margin: 20px; color: #333; background-color: #f0f2f5; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.2rem; color: #444; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+        #result { display: none; padding: 20px; }
+        .isbn-display { font-size: 1.4rem; font-weight: bold; color: #ff5a5f; margin: 10px 0; }
+        .btn { display: inline-block; width: 100%; padding: 15px 0; margin: 10px 0; font-size: 1rem; font-weight: bold; text-decoration: none; border-radius: 8px; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-calil { background-color: #ff5a5f; color: white; }
+        .btn-calil:hover { background-color: #e54147; }
+        .btn-retry { background-color: #6c757d; color: white; }
+        .status-msg { font-size: 0.9rem; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>ISBNスキャナー</h1>
+<div class="container">
+    <h1>蔵書スキャナー</h1>
+    <p class="status-msg">本のバーコード（上段）をスキャンしてください</p>
     
     <div id="reader"></div>
 
     <div id="result">
-        <p>ISBN: <strong id="isbn-number"></strong></p>
-        <a id="library-link" href="" target="_blank" class="btn">横浜市立図書館で予約</a>
-        <br><br>
-        <button onclick="location.reload()">再スキャン</button>
+        <p>スキャン成功！</p>
+        <div id="isbn-number" class="isbn-display"></div>
+        
+        <a id="calil-link" href="" target="_blank" class="btn btn-calil">カーリルで蔵書・予約確認</a>
+        
+        <button onclick="location.reload()" class="btn btn-retry">別の本をスキャン</button>
     </div>
+</div>
 
-    <script>
-        const html5QrCode = new Html5Qrcode("reader");
-        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            // バーコードが読み取れた時の処理
-            console.log(`Scan result: ${decodedText}`);
-            
-            // ISBN（通常978から始まる13桁）であることを簡易チェック
-            if (decodedText.startsWith("978") || decodedText.length === 13 || decodedText.length === 10) {
-                // スキャンを停止
-                html5QrCode.stop().then(() => {
-                    document.getElementById("reader").style.display = "none";
-                    document.getElementById("result").style.display = "block";
-                    document.getElementById("isbn-number").innerText = decodedText;
+<script>
+    const html5QrCode = new Html5Qrcode("reader");
 
-                    // 横浜市立図書館への検索URLを生成
-                    const libraryUrl = `https://www.lib.city.yokohama.lg.jp/licsxp-opac/WOpacMsgNewListToTcapSrv.do?ISBN-13=${decodedText}`;
-                    document.getElementById("library-link").href = libraryUrl;
-                });
-            }
-        };
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        const cleanIsbn = decodedText.replace(/[-\s]/g, "");
+        const isbnRegex = /^(978|979)\d{10}$|^\d{9}[\dX]$/;
+        
+        if (isbnRegex.test(cleanIsbn)) {
+            html5QrCode.stop().then(() => {
+                document.getElementById("reader").style.display = "none";
+                document.getElementById("result").style.display = "block";
+                document.getElementById("isbn-number").innerText = "ISBN: " + cleanIsbn;
 
-        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+                // カーリル経由のURLを生成
+                // https://calil.jp/book/[ISBN番号]
+                const calilUrl = `https://calil.jp/book/${cleanIsbn}`;
+                document.getElementById("calil-link").href = calilUrl;
+            }).catch(err => console.error(err));
+        }
+    };
 
-        // 背面カメラ（environment）を使用して起動
-        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
-    </script>
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 280, height: 150 },
+        aspectRatio: 1.0 
+    };
+
+    html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+    .catch(err => {
+        alert("カメラ起動エラー: HTTPS接続とカメラ許可を確認してください。");
+    });
+</script>
+
 </body>
 </html>

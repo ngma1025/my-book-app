@@ -142,4 +142,93 @@
             document.getElementById('reader').style.display = 'block';
             html5QrCode = html5QrCode || new Html5Qrcode("reader");
             await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 280 }, onScanSuccess);
-            is
+            isScanning = true;
+            scanBtn.innerText = "🛑 スキャン停止";
+            scanBtn.classList.replace('btn-start', 'btn-stop');
+        } else {
+            await stopScanner();
+        }
+    });
+
+    async function stopScanner() {
+        if (html5QrCode && isScanning) {
+            await html5QrCode.stop();
+            document.getElementById('reader').style.display = 'none';
+            isScanning = false;
+            scanBtn.innerText = "📷 スキャン開始";
+            scanBtn.classList.replace('btn-stop', 'btn-start');
+        }
+    }
+
+    function onScanSuccess(txt) {
+        const isbn = txt.replace(/[-\s]/g, "");
+        if (/^(978|979)\d{10}$/.test(isbn)) {
+            stopScanner();
+            fetchPreciseInfo(isbn);
+        }
+    }
+
+    // --- 3. 精密ジャンル判定エンジン (3段構え) ---
+    async function fetchPreciseInfo(isbn) {
+        try {
+            const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
+            const data = await res.json();
+            if (!data || !data[0]) { alert("本が見つかりません"); return; }
+
+            const summary = data[0].summary;
+            const onix = data[0].onix;
+            const subjects = onix?.DescriptiveDetail?.Subject || [];
+
+            let genre = "未分類";
+
+            // Tier 1: Cコード (Identifier 78)
+            const cCodeSub = subjects.find(s => s.SubjectSchemeIdentifier === "78");
+            if (cCodeSub && cCodeSub.SubjectCode) {
+                const codeId = cCodeSub.SubjectCode.substring(3, 5);
+                genre = C_CODE_MAP[codeId] || "専門書(" + codeId + ")";
+            } 
+            
+            // Tier 2: NDC (Identifier 69)
+            if (genre === "未分類") {
+                const ndcSub = subjects.find(s => s.SubjectSchemeIdentifier === "69");
+                if (ndcSub && ndcSub.SubjectCode) {
+                    const first = ndcSub.SubjectCode.substring(0, 1);
+                    const ndcMap = {"0":"総記","1":"哲学","2":"歴史","3":"社会科学","4":"自然科学","5":"工学・技術","6":"産業","7":"芸術","8":"語学","9":"文学"};
+                    genre = ndcMap[first] || "学術書";
+                }
+            }
+
+            // Tier 3: キーワード
+            if (genre === "未分類") {
+                const keywordSub = subjects.find(s => s.SubjectSchemeIdentifier === "20");
+                genre = keywordSub ? keywordSub.SubjectHeadingText.split(" ")[0] : "一般";
+            }
+
+            const book = { title: summary.title, author: summary.author, publisher: summary.publisher, isbn, genre };
+
+            document.getElementById("preview").style.display = "block";
+            document.getElementById("pre-genre").innerText = genre;
+            document.getElementById("pre-title").innerText = book.title;
+            document.getElementById("pre-author").innerText = book.author;
+            
+            document.getElementById("btn-save").onclick = () => saveProcess(book);
+        } catch (e) { alert("API通信エラー"); }
+    }
+
+    async function saveProcess(book) {
+        const newRow = [book.title, book.author, book.publisher, "", book.genre, "", book.isbn];
+        saveLocal([...allBooks, newRow]);
+        document.getElementById("preview").style.display = "none";
+        fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify(book) }).catch(e => {});
+    }
+
+    async function deleteBook(isbn, title) {
+        if (!confirm(title + " を削除しますか？")) return;
+        saveLocal(allBooks.filter(b => b[6] !== isbn || b[0] !== title));
+        fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify({ action: "delete", isbn, title }) }).catch(e => {});
+    }
+
+    initSystem();
+</script>
+</body>
+</html>

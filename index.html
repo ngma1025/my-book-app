@@ -3,41 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蔵書管理 v2.5 - Genre Auto-Capture</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <title>蔵書管理 v3.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --accent: #0ea5e9; --danger: #ef4444; --bg: #f1f5f9; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #334155; line-height: 1.5; }
-        .container { max-width: 900px; margin: auto; }
+        :root { --primary: #2563eb; --danger: #ef4444; --bg: #f1f5f9; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #334155; }
+        .container { max-width: 800px; margin: auto; }
+        .section { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* スキャナーボタンのスタイル */
+        .scanner-ctrl-btn {
+            width: 100%; padding: 16px; border-radius: 12px; border: none;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            transition: all 0.3s; margin-bottom: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-on { background: var(--primary); color: white; }
+        .btn-off { background: #64748b; color: white; }
+
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; }
         
-        .section { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 24px; }
-        h2 { margin-top: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 10px; color: #1e293b; }
-        h2::before { content: ''; display: block; width: 4px; height: 24px; background: var(--primary); border-radius: 2px; }
+        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .book-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+        .card-actions { margin-top: auto; padding-top: 10px; display: flex; gap: 8px; }
+        .btn-action { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; text-align: center; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; }
 
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
-        
-        /* 検索窓 */
-        .search-box { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; margin-bottom: 20px; outline: none; transition: border-color 0.2s; }
-        .search-box:focus { border-color: var(--primary); }
-
-        /* カードグリッド */
-        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .book-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
-        .book-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        
-        .genre-badge { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 2px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; margin-bottom: 10px; align-self: flex-start; }
-        .book-title { font-weight: 800; font-size: 1.1rem; color: #1e293b; margin-bottom: 8px; min-height: 2.8rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .book-meta { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-
-        .card-actions { margin-top: auto; padding-top: 15px; display: flex; gap: 10px; }
-        .btn-action { flex: 1; padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-decoration: none; text-align: center; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; cursor: pointer; transition: 0.2s; }
-        .btn-calil { background: #fff1f2; color: #e11d48; border-color: #fecdd3; }
-        .btn-delete { background: #fef2f2; color: var(--danger); border-color: #fee2e2; }
-        .btn-delete:hover { background: var(--danger); color: white; }
-
-        /* プレビューエリア */
-        #preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 20px; border-radius: 12px; margin-top: 20px; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        #preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -45,146 +36,147 @@
 <div class="container">
     <div class="section">
         <h2>蔵書スキャナー</h2>
+        
+        <button id="scanner-toggle-btn" class="scanner-ctrl-btn btn-on">
+            📷 スキャナーを起動する
+        </button>
+
         <div id="reader"></div>
         
         <div id="preview">
-            <div id="pre-genre" class="genre-badge"></div>
-            <div id="pre-title" style="font-weight:bold; font-size:1.2rem; margin-bottom:5px;"></div>
-            <div id="pre-author" style="color:#64748b; margin-bottom:15px;"></div>
-            <button id="btn-save" style="background:var(--primary); color:white; border:none; padding:12px; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;">CSVに登録する</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#94a3b8; width:100%; margin-top:10px; cursor:pointer;">キャンセル</button>
+            <div id="pre-title" style="font-weight:bold;"></div>
+            <div id="pre-author"></div>
+            <button id="btn-save" style="background:var(--primary); color:white; border:none; padding:12px; border-radius:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:bold;">CSVに登録する</button>
         </div>
     </div>
 
     <div class="section">
-        <h2>登録済み一覧</h2>
-        <input type="text" id="searchInput" class="search-box" placeholder="タイトル、著者、ジャンルで検索..." onkeyup="filterBooks()">
-        <div id="book-list" class="book-grid">
-            <p style="color:#94a3b8; font-style:italic;">データを読み込み中...</p>
-        </div>
+        <h3>登録済み一覧</h3>
+        <div id="book-list" class="book-grid">読み込み中...</div>
     </div>
 </div>
 
 <script>
-    // ★ここに取得した /exec URLを正確に貼り付けてください
     const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbziPJgpM21KMpuagIGdR1JrMgn_l6fAlQjhUZb2Ewc-ssPLHQ8C9il4_9tkN0JfS90IsA/exec";
-    let allBooks = [];
+    
+    let html5QrCode = null;
+    let isScanning = false;
 
-    // 1. 一覧取得と表示
-    async function loadList() {
-        try {
-            const res = await fetch(GAS_ENDPOINT + "?action=getData");
-            const data = await res.json();
-            allBooks = (data && data.length > 1) ? data.slice(1) : [];
-            renderBooks(allBooks);
-        } catch (e) { 
-            document.getElementById("book-list").innerHTML = "データの取得に失敗しました。"; 
-        }
-    }
+    // --- 1. スキャナー制御ロジック ---
+    const toggleBtn = document.getElementById('scanner-toggle-btn');
+    const readerDiv = document.getElementById('reader');
 
-    function renderBooks(books) {
-        const list = document.getElementById("book-list");
-        if (books.length === 0) { list.innerHTML = "<p>該当する本はありません。</p>"; return; }
-        
-        list.innerHTML = books.slice().reverse().map(b => {
-            const [title, author, pub, , genre, , isbn] = b;
-            return `
-                <div class="book-card">
-                    <span class="genre-badge">${genre || '一般'}</span>
-                    <div class="book-title" title="${title}">${title}</div>
-                    <div class="book-meta">👤 ${author}</div>
-                    <div class="book-meta">🏢 ${pub}</div>
-                    <div class="card-actions">
-                        <a href="https://calil.jp/book/${isbn}" target="_blank" class="btn-action btn-calil">図書館</a>
-                        <button onclick="deleteBook('${isbn}', '${title}')" class="btn-action btn-delete">削除</button>
-                    </div>
-                </div>`;
-        }).join('');
-    }
-
-    // 検索フィルタ
-    function filterBooks() {
-        const q = document.getElementById("searchInput").value.toLowerCase();
-        const filtered = allBooks.filter(b => b.join('').toLowerCase().includes(q));
-        renderBooks(filtered);
-    }
-
-    // 2. スキャンと書籍情報の自動解析(ジャンル含む)
-    const scanner = new Html5Qrcode("reader");
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 280 }, async (txt) => {
-        const isbn = txt.replace(/[-\s]/g, "");
-        if (/^(978|979)\d{10}$/.test(isbn)) {
-            scanner.stop();
-            fetchDetailedBookInfo(isbn);
+    toggleBtn.addEventListener('click', async () => {
+        if (!isScanning) {
+            await startScanner();
+        } else {
+            await stopScanner();
         }
     });
 
-    async function fetchDetailedBookInfo(isbn) {
+    async function startScanner() {
+        try {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            readerDiv.style.display = 'block';
+            
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 15, qrbox: 280 },
+                onScanSuccess
+            );
+
+            isScanning = true;
+            toggleBtn.innerText = "🛑 スキャナーを停止する";
+            toggleBtn.classList.remove('btn-on');
+            toggleBtn.classList.add('btn-off');
+        } catch (err) {
+            alert("カメラの起動に失敗しました: " + err);
+        }
+    }
+
+    async function stopScanner() {
+        if (html5QrCode && isScanning) {
+            await html5QrCode.stop();
+            readerDiv.style.display = 'none';
+            isScanning = false;
+            toggleBtn.innerText = "📷 スキャナーを起動する";
+            toggleBtn.classList.remove('btn-off');
+            toggleBtn.classList.add('btn-on');
+        }
+    }
+
+    async function onScanSuccess(decodedText) {
+        const isbn = decodedText.replace(/[-\s]/g, "");
+        if (/^(978|979)\d{10}$/.test(isbn)) {
+            // スキャン成功したら一度停止する
+            await stopScanner();
+            fetchBookInfo(isbn);
+        }
+    }
+
+    // --- 2. 書籍情報取得 & 登録 ---
+    async function fetchBookInfo(isbn) {
         try {
             const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
             const data = await res.json();
-            
             if (data && data[0]) {
-                const summary = data[0].summary;
+                const b = data[0].summary;
                 const onix = data[0].onix;
-
-                // --- ジャンル(分類)の自動解析 ---
-                let genre = "未分類";
-                const subjects = onix?.DescriptiveDetail?.Subject;
-                if (subjects && subjects.length > 0) {
-                    // 最も適切な分類名を取得（ SubjectHeadingText ）
-                    genre = subjects[subjects.length - 1].SubjectHeadingText || "一般";
-                }
-
-                const book = { 
-                    title: summary.title, 
-                    author: summary.author, 
-                    publisher: summary.publisher, 
-                    isbn: isbn,
-                    genre: genre,
-                    summary: summary.description || ""
-                };
-
-                // プレビュー表示
-                document.getElementById("preview").style.display = "block";
-                document.getElementById("pre-genre").innerText = book.genre;
-                document.getElementById("pre-title").innerText = book.title;
-                document.getElementById("pre-author").innerText = "著者: " + book.author;
                 
+                // ジャンル取得
+                let genre = "一般";
+                const subjects = onix?.DescriptiveDetail?.Subject;
+                if (subjects) genre = subjects[subjects.length - 1].SubjectHeadingText || "一般";
+
+                document.getElementById("preview").style.display = "block";
+                document.getElementById("pre-title").innerText = b.title;
+                document.getElementById("pre-author").innerText = `${b.author} (${genre})`;
+
                 document.getElementById("btn-save").onclick = async () => {
-                    await registerToGas(book);
+                    await fetch(GAS_ENDPOINT, { 
+                        method: "POST", 
+                        body: JSON.stringify({ ...b, isbn, genre }) 
+                    });
+                    alert("登録しました");
+                    location.reload();
                 };
-            } else {
-                alert("書籍情報が見つかりません。");
-                location.reload();
             }
-        } catch (e) { alert("API通信エラー"); location.reload(); }
+        } catch (e) { alert("情報取得失敗"); location.reload(); }
     }
 
-    async function registerToGas(book) {
-        const btn = document.getElementById("btn-save");
-        btn.innerText = "登録中...";
-        btn.disabled = true;
+    // --- 3. 一覧表示 ---
+    async function loadList() {
+        const list = document.getElementById("book-list");
         try {
-            await fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify(book) });
-            alert("「" + book.title + "」を登録しました！");
-            location.reload();
-        } catch (e) { alert("保存失敗"); btn.disabled = false; }
+            const res = await fetch(GAS_ENDPOINT + "?action=getData");
+            const data = await res.json();
+            if (!data || data.length <= 1) {
+                list.innerHTML = "本はありません。";
+                return;
+            }
+            list.innerHTML = data.slice(1).reverse().map(b => `
+                <div class="book-card">
+                    <div style="font-size:0.7rem; color:var(--primary); font-weight:bold;">${b[4] || '一般'}</div>
+                    <div style="font-weight:bold; margin:5px 0;">${b[0]}</div>
+                    <div style="font-size:0.8rem; color:#666;">${b[1]}</div>
+                    <div class="card-actions">
+                        <a href="https://calil.jp/book/${b[6]}" target="_blank" class="btn-action">図書館</a>
+                        <button onclick="deleteBook('${b[6]}', '${b[0]}')" class="btn-action" style="color:var(--danger)">削除</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (e) { list.innerHTML = "取得エラー"; }
     }
 
-    // 3. 削除処理
     async function deleteBook(isbn, title) {
-        if (!confirm(`「${title}」を削除してもよろしいですか？`)) return;
-        try {
-            await fetch(GAS_ENDPOINT, {
-                method: "POST",
-                body: JSON.stringify({ action: "delete", isbn, title })
-            });
-            loadList(); // リストを再表示
-        } catch (e) { alert("削除に失敗しました。"); }
+        if (!confirm(title + " を削除しますか？")) return;
+        await fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify({ action: "delete", isbn, title }) });
+        loadList();
     }
 
-    window.onload = loadList;
+    loadList();
 </script>
 </body>
 </html>

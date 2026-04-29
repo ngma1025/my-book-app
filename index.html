@@ -3,32 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蔵書管理 v3.0</title>
+    <title>蔵書管理 v4.0 - Ultra Fast</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --bg: #f1f5f9; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #334155; }
         .container { max-width: 800px; margin: auto; }
         .section { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-
-        /* スキャナーボタンのスタイル */
-        .scanner-ctrl-btn {
-            width: 100%; padding: 16px; border-radius: 12px; border: none;
-            font-size: 1.1rem; font-weight: bold; cursor: pointer;
-            transition: all 0.3s; margin-bottom: 15px;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
+        .scanner-ctrl-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-on { background: var(--primary); color: white; }
         .btn-off { background: #64748b; color: white; }
-
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; }
-        
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; margin-bottom: 20px; }
         .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-        .book-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+        .book-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: 0.2s; }
+        .book-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .card-actions { margin-top: auto; padding-top: 10px; display: flex; gap: 8px; }
-        .btn-action { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; text-align: center; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; }
-
+        .btn-action { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; text-decoration: none; text-align: center; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; cursor: pointer; }
         #preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .sync-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; float: right; background: #e2e8f0; color: #64748b; }
     </style>
 </head>
 <body>
@@ -36,147 +28,171 @@
 <div class="container">
     <div class="section">
         <h2>蔵書スキャナー</h2>
-        
-        <button id="scanner-toggle-btn" class="scanner-ctrl-btn btn-on">
-            📷 スキャナーを起動する
-        </button>
-
+        <button id="scanner-toggle-btn" class="scanner-ctrl-btn btn-on">📷 スキャン開始</button>
         <div id="reader"></div>
         
         <div id="preview">
-            <div id="pre-title" style="font-weight:bold;"></div>
-            <div id="pre-author"></div>
-            <button id="btn-save" style="background:var(--primary); color:white; border:none; padding:12px; border-radius:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:bold;">CSVに登録する</button>
+            <div id="pre-title" style="font-weight:bold; font-size:1.1rem;"></div>
+            <div id="pre-author" style="color:#64748b; font-size:0.9rem;"></div>
+            <button id="btn-save" style="background:var(--primary); color:white; border:none; padding:12px; border-radius:8px; width:100%; margin-top:10px; cursor:pointer; font-weight:bold;">即時登録</button>
         </div>
     </div>
 
     <div class="section">
-        <h3>登録済み一覧</h3>
-        <div id="book-list" class="book-grid">読み込み中...</div>
+        <h3>登録済み一覧 <span id="status-icon" class="sync-badge">Local</span></h3>
+        <div id="book-list" class="book-grid"></div>
     </div>
 </div>
 
 <script>
     const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbziPJgpM21KMpuagIGdR1JrMgn_l6fAlQjhUZb2Ewc-ssPLHQ8C9il4_9tkN0JfS90IsA/exec";
+    const STORAGE_KEY = "book_cache_data";
     
     let html5QrCode = null;
     let isScanning = false;
+    let allBooks = [];
 
-    // --- 1. スキャナー制御ロジック ---
-    const toggleBtn = document.getElementById('scanner-toggle-btn');
-    const readerDiv = document.getElementById('reader');
+    // --- 1. ローカルデータベース（localStorage）操作 ---
+    function loadFromLocal() {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        return cached ? JSON.parse(cached) : [];
+    }
 
-    toggleBtn.addEventListener('click', async () => {
-        if (!isScanning) {
-            await startScanner();
-        } else {
-            await stopScanner();
-        }
-    });
+    function saveToLocal(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        allBooks = data;
+        renderBooks(data);
+    }
 
-    async function startScanner() {
+    // --- 2. 表示ロジック (爆速表示) ---
+    async function initList() {
+        // まずローカルデータを表示（0秒）
+        allBooks = loadFromLocal();
+        renderBooks(allBooks);
+        
+        // その後、GASから最新を取得（バックグラウンド同期）
         try {
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("reader");
+            const res = await fetch(GAS_ENDPOINT + "?action=getData");
+            const cloudData = await res.json();
+            if (cloudData && cloudData.length > 1) {
+                const freshBooks = cloudData.slice(1);
+                saveToLocal(freshBooks); // ローカルを更新
+                document.getElementById('status-icon').innerText = "Synced";
             }
-            readerDiv.style.display = 'block';
-            
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 15, qrbox: 280 },
-                onScanSuccess
-            );
-
-            isScanning = true;
-            toggleBtn.innerText = "🛑 スキャナーを停止する";
-            toggleBtn.classList.remove('btn-on');
-            toggleBtn.classList.add('btn-off');
-        } catch (err) {
-            alert("カメラの起動に失敗しました: " + err);
+        } catch (e) {
+            document.getElementById('status-icon').innerText = "Offline Mode";
         }
     }
+
+    function renderBooks(books) {
+        const list = document.getElementById("book-list");
+        if (books.length === 0) {
+            list.innerHTML = "<p style='color:#94a3b8;'>登録された本はありません。</p>";
+            return;
+        }
+        // 新しい順に表示
+        list.innerHTML = [...books].reverse().map(b => `
+            <div class="book-card">
+                <div style="font-size:0.7rem; color:var(--primary); font-weight:bold;">${b[4] || '一般'}</div>
+                <div style="font-weight:bold; margin:4px 0; color:#1e293b;">${b[0]}</div>
+                <div style="font-size:0.8rem; color:#64748b;">${b[1]}</div>
+                <div class="card-actions">
+                    <a href="https://calil.jp/book/${b[6]}" target="_blank" class="btn-action">図書館</a>
+                    <button onclick="deleteBookLocal('${b[6]}', '${b[0]}')" class="btn-action" style="color:var(--danger)">削除</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- 3. 登録ロジック (ローカル先行) ---
+    async function registerBookLocal(book) {
+        // 1. ローカルデータを即更新
+        const newRow = [book.title, book.author, book.publisher, "", book.genre, "", book.isbn];
+        const updated = [...allBooks, newRow];
+        saveToLocal(updated);
+        
+        // 2. プレビューを閉じる
+        document.getElementById("preview").style.display = "none";
+        
+        // 3. 裏でGASに送信
+        try {
+            await fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify(book) });
+            console.log("GAS Sync Success");
+        } catch (e) {
+            alert("クラウドへの同期に失敗しました（データはスマホに残っています）");
+        }
+    }
+
+    // --- 4. 削除ロジック (ローカル先行) ---
+    async function deleteBookLocal(isbn, title) {
+        if (!confirm(title + " を削除しますか？")) return;
+        
+        // 1. ローカルから即消去
+        const updated = allBooks.filter(b => b[6] !== isbn || b[0] !== title);
+        saveToLocal(updated);
+        
+        // 2. 裏でGASに送信
+        try {
+            await fetch(GAS_ENDPOINT, { 
+                method: "POST", 
+                body: JSON.stringify({ action: "delete", isbn, title }) 
+            });
+        } catch (e) {
+            console.error("GAS Delete Sync Failed");
+        }
+    }
+
+    // --- 5. スキャナー制御 ---
+    const toggleBtn = document.getElementById('scanner-toggle-btn');
+    toggleBtn.addEventListener('click', async () => {
+        if (!isScanning) {
+            document.getElementById('reader').style.display = 'block';
+            html5QrCode = html5QrCode || new Html5Qrcode("reader");
+            await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 280 }, onScanSuccess);
+            isScanning = true;
+            toggleBtn.innerText = "🛑 スキャン停止";
+            toggleBtn.classList.replace('btn-on', 'btn-off');
+        } else {
+            stopScanner();
+        }
+    });
 
     async function stopScanner() {
         if (html5QrCode && isScanning) {
             await html5QrCode.stop();
-            readerDiv.style.display = 'none';
+            document.getElementById('reader').style.display = 'none';
             isScanning = false;
-            toggleBtn.innerText = "📷 スキャナーを起動する";
-            toggleBtn.classList.remove('btn-off');
-            toggleBtn.classList.add('btn-on');
+            toggleBtn.innerText = "📷 スキャン開始";
+            toggleBtn.classList.replace('btn-off', 'btn-on');
         }
     }
 
-    async function onScanSuccess(decodedText) {
-        const isbn = decodedText.replace(/[-\s]/g, "");
+    function onScanSuccess(txt) {
+        const isbn = txt.replace(/[-\s]/g, "");
         if (/^(978|979)\d{10}$/.test(isbn)) {
-            // スキャン成功したら一度停止する
-            await stopScanner();
+            stopScanner();
             fetchBookInfo(isbn);
         }
     }
 
-    // --- 2. 書籍情報取得 & 登録 ---
     async function fetchBookInfo(isbn) {
-        try {
-            const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
-            const data = await res.json();
-            if (data && data[0]) {
-                const b = data[0].summary;
-                const onix = data[0].onix;
-                
-                // ジャンル取得
-                let genre = "一般";
-                const subjects = onix?.DescriptiveDetail?.Subject;
-                if (subjects) genre = subjects[subjects.length - 1].SubjectHeadingText || "一般";
-
-                document.getElementById("preview").style.display = "block";
-                document.getElementById("pre-title").innerText = b.title;
-                document.getElementById("pre-author").innerText = `${b.author} (${genre})`;
-
-                document.getElementById("btn-save").onclick = async () => {
-                    await fetch(GAS_ENDPOINT, { 
-                        method: "POST", 
-                        body: JSON.stringify({ ...b, isbn, genre }) 
-                    });
-                    alert("登録しました");
-                    location.reload();
-                };
-            }
-        } catch (e) { alert("情報取得失敗"); location.reload(); }
+        const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
+        const data = await res.json();
+        if (data && data[0]) {
+            const b = data[0].summary;
+            const subjects = data[0].onix?.DescriptiveDetail?.Subject;
+            const genre = subjects ? subjects[subjects.length - 1].SubjectHeadingText : "一般";
+            
+            document.getElementById("preview").style.display = "block";
+            document.getElementById("pre-title").innerText = b.title;
+            document.getElementById("pre-author").innerText = b.author + " [" + genre + "]";
+            
+            document.getElementById("btn-save").onclick = () => registerBookLocal({...b, isbn, genre});
+        }
     }
 
-    // --- 3. 一覧表示 ---
-    async function loadList() {
-        const list = document.getElementById("book-list");
-        try {
-            const res = await fetch(GAS_ENDPOINT + "?action=getData");
-            const data = await res.json();
-            if (!data || data.length <= 1) {
-                list.innerHTML = "本はありません。";
-                return;
-            }
-            list.innerHTML = data.slice(1).reverse().map(b => `
-                <div class="book-card">
-                    <div style="font-size:0.7rem; color:var(--primary); font-weight:bold;">${b[4] || '一般'}</div>
-                    <div style="font-weight:bold; margin:5px 0;">${b[0]}</div>
-                    <div style="font-size:0.8rem; color:#666;">${b[1]}</div>
-                    <div class="card-actions">
-                        <a href="https://calil.jp/book/${b[6]}" target="_blank" class="btn-action">図書館</a>
-                        <button onclick="deleteBook('${b[6]}', '${b[0]}')" class="btn-action" style="color:var(--danger)">削除</button>
-                    </div>
-                </div>
-            `).join('');
-        } catch (e) { list.innerHTML = "取得エラー"; }
-    }
-
-    async function deleteBook(isbn, title) {
-        if (!confirm(title + " を削除しますか？")) return;
-        await fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify({ action: "delete", isbn, title }) });
-        loadList();
-    }
-
-    loadList();
+    // 起動
+    initList();
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蔵書管理 Pro v6.9 - Multi-User Ready</title>
+    <title>蔵書管理 Pro (GitHub Edition)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; }
@@ -16,193 +16,129 @@
         #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; margin-top: 15px; }
         .input-group { display: flex; gap: 8px; margin-top: 15px; }
         .search-box { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
-        
         #preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 20px; border-radius: 14px; margin-top: 15px; }
-        .edit-input { width: 100%; padding: 10px; border: 2px solid #bae6fd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; font-weight: bold; }
-        .debug-label { font-family: monospace; font-size: 0.75rem; color: #ef4444; background: #fee2e2; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
-
+        .edit-select { width: 100%; padding: 12px; border: 2px solid #bae6fd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; background: white; }
         .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
-        .book-card { background: white; padding: 18px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; min-height: 180px; }
-        .genre-badge { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 3px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; margin-bottom: 10px; align-self: flex-start; }
-        .book-title { font-weight: 800; font-size: 1.05rem; color: #0f172a; margin-bottom: 6px; }
-        .book-meta { color: #64748b; font-size: 0.85rem; margin-bottom: 4px; }
-        .book-owner { color: #94a3b8; font-size: 0.7rem; font-style: italic; margin-top: 5px; }
-        .card-actions { margin-top: auto; padding-top: 15px; display: flex; gap: 8px; }
-        .btn-action { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.75rem; text-align: center; border: 1px solid #e2e8f0; background: #f8fafc; text-decoration: none; color: #475569; font-weight: bold; cursor: pointer; }
+        .book-card { background: white; padding: 18px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; min-height: 160px; }
+        .genre-badge { display: inline-block; padding: 3px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; margin-bottom: 10px; align-self: flex-start; }
+        /* ジャンル色定義 */
+        .badge-科学 { background: #dcfce7; color: #166534; } .badge-工学 { background: #fee2e2; color: #991b1b; }
+        .badge-歴史 { background: #fef3c7; color: #92400e; } .badge-社会 { background: #e0f2fe; color: #075985; }
+        .badge-文学 { background: #f3e8ff; color: #6b21a8; } .badge-実用 { background: #ffedd5; color: #9a3412; }
+        .badge-その他 { background: #f1f5f9; color: #475569; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="section">
-        <h2>蔵書スキャナー <small style="font-weight:normal; font-size:0.7rem;">v6.9 Pro</small></h2>
+        <h2>蔵書スキャナー <small>GitHub版</small></h2>
         <button id="scan-toggle" class="ctrl-btn btn-start">📷 スキャン開始</button>
         <div id="reader"></div>
-
         <div class="input-group">
-            <input type="text" id="manual-isbn" class="search-box" style="flex:2" placeholder="ISBNを入力（ハイフンOK）">
+            <input type="text" id="manual-isbn" class="search-box" style="flex:2" placeholder="ISBNを入力">
             <button onclick="manualRegister()" class="btn-start" style="flex:1; border-radius:10px; border:none; color:white;">登録</button>
         </div>
-        
         <div id="preview">
-            <div style="font-size:0.8rem; color:#0369a1; font-weight:bold; margin-bottom:5px;">
-                💡 ジャンル判定 <span id="debug-raw-code" class="debug-label">RAW: ---</span>
-            </div>
-            <input type="text" id="edit-genre" class="edit-input">
-            <div id="pre-title" style="font-weight:bold; font-size:1.1rem; margin-bottom:4px;"></div>
-            <div id="pre-author" style="color:#64748b; font-size:0.9rem; margin-bottom:20px;"></div>
-            <button id="btn-save" class="btn-start" style="padding:15px; width:100%; border-radius:10px; cursor:pointer;">確定保存</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#94a3b8; width:100%; margin-top:12px; font-size:0.8rem;">キャンセル</button>
+            <select id="edit-genre" class="edit-select">
+                <option value="科学">科学</option><option value="工学">工学</option><option value="歴史">歴史</option>
+                <option value="社会">社会</option><option value="文学">文学</option><option value="実用">実用</option>
+                <option value="その他" selected>その他</option>
+            </select>
+            <div id="pre-title" style="font-weight:bold; font-size:1.1rem;"></div>
+            <div id="pre-author" style="color:#64748b; margin-bottom:20px;"></div>
+            <button id="btn-save" class="btn-start" style="width:100%;">確定保存</button>
         </div>
     </div>
-
     <div class="section">
-        <h2>登録済み一覧 <span id="sync-status" style="font-size:0.7rem; color:#94a3b8; float:right;">Syncing...</span></h2>
-        <input type="text" id="searchInput" class="search-box" placeholder="キーワードで検索..." onkeyup="filterBooks()">
+        <h2>登録済み一覧 <span id="sync-status" style="font-size:0.7rem; float:right;">Wait...</span></h2>
         <div id="book-list" class="book-grid"></div>
     </div>
 </div>
 
 <script>
-    // ※デプロイ後のウェブアプリURLをここに反映させてください
-    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycb...あなたのID.../exec";
-    const STORAGE_KEY = "book_pro_cache_v69";
+// --- ここにGASのURLを貼り付けてください ---
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxq_JIV-tLFuWyAlQznonBkPS64oGMhqojCrGTrnNwCV9wZL7BjC3nMkLG_0EDVBDJ7CA/exec";
+const STORAGE_KEY = "book_pro_cache_v70";
+let allBooks = [];
 
-    const C_CODE_MAP = {
-        "00": "総記", "04": "情報科学", "30": "社会科学", "33": "経済・経営", 
-        "41": "数学", "42": "物理学", "50": "工学・技術", "54": "電気", "55": "電子通信", "56": "情報工学"
-    };
-
-    let allBooks = [];
-
-    function resolveGenre(onix) {
-        const subjects = onix?.DescriptiveDetail?.Subject || [];
-        const cCodeSub = subjects.find(s => s.SubjectSchemeIdentifier === "78");
-        
-        let raw = "N/A";
-        let label = "コードなし";
-
-        if (cCodeSub && cCodeSub.SubjectCode) {
-            raw = cCodeSub.SubjectCode;
-            const codeId = String(raw).slice(-2);
-            label = C_CODE_MAP[codeId] || "その他(" + codeId + ")";
-        } else {
-            const ndcSub = subjects.find(s => s.SubjectSchemeIdentifier === "69");
-            if (ndcSub && ndcSub.SubjectCode) {
-                raw = "NDC:" + ndcSub.SubjectCode;
-                const top = ndcSub.SubjectCode.substring(0, 1);
-                const ndcMap = {"0":"総記","1":"哲学","2":"歴史","3":"社会科学","4":"自然科学","5":"工学・技術","6":"産業","7":"芸術","8":"語学","9":"文学"};
-                label = ndcMap[top] || "学術書";
-            }
-        }
-        return { label, raw };
+async function init() {
+  allBooks = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  renderBooks(allBooks);
+  try {
+    const res = await fetch(GAS_ENDPOINT + "?action=getData");
+    const data = await res.json();
+    if (data && data.length > 0) {
+      allBooks = data.slice(1);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(allBooks));
+      renderBooks(allBooks);
+      document.getElementById('sync-status').innerText = "Synced ✅";
     }
-
-    async function init() {
-        allBooks = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        renderBooks(allBooks);
-        try {
-            const res = await fetch(GAS_ENDPOINT + "?action=getData");
-            const data = await res.json();
-            if (data && data.length > 1) {
-                allBooks = data.slice(1);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(allBooks));
-                renderBooks(allBooks);
-                document.getElementById('sync-status').innerText = "Synced ✅";
-            }
-        } catch (e) { document.getElementById('sync-status').innerText = "Offline Mode"; }
-    }
-
- function renderBooks(books) {
-    const list = document.getElementById("book-list");
-    list.innerHTML = [...books].reverse().map(b => `
-        <div class="book-card">
-            <span class="genre-badge">${b[4] || '不明'}</span>
-            <div class="book-title">${b[0]}</div>
-            <div class="book-meta">👤 ${b[1]}</div>
-            <div class="book-meta">🏢 ${b[2]}</div>
-            <!-- ★Added by の表示を削除しました -->
-            <div class="card-actions">
-                <a href="https://calil.jp/book/${b[6]}" target="_blank" class="btn-action">カーリル</a>
-                <button onclick="deleteLocal('${b[6]}', '${b[0]}')" class="btn-action" style="color:red">削除</button>
-            </div>
-        </div>
-    `).join('');
+  } catch (e) { document.getElementById('sync-status').innerText = "Offline Mode"; }
 }
-    async function fetchInfo(isbn) {
-        try {
-            const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
-            const data = await res.json();
-            if (!data || !data[0]) { alert("本が見つかりません"); return; }
-            const summary = data[0].summary;
-            const resGenre = resolveGenre(data[0].onix);
 
-            document.getElementById("preview").style.display = "block";
-            document.getElementById("debug-raw-code").innerText = "RAW: " + resGenre.raw;
-            document.getElementById("edit-genre").value = resGenre.label;
-            document.getElementById("pre-title").innerText = summary.title;
-            document.getElementById("pre-author").innerText = summary.author;
-            
-            document.getElementById("btn-save").onclick = () => {
-                saveProcess({ ...summary, isbn, genre: document.getElementById("edit-genre").value });
-            };
-        } catch (e) { alert("通信エラー"); }
-    }
+function renderBooks(books) {
+  const list = document.getElementById("book-list");
+  list.innerHTML = [...books].reverse().map(b => {
+    const g = b[4] || 'その他';
+    return `<div class="book-card">
+      <span class="genre-badge badge-${g}">${g}</span>
+      <div style="font-weight:bold">${b[0]}</div>
+      <div style="font-size:0.8rem; color:#64748b;">${b[1]}</div>
+      <div style="margin-top:auto; display:flex; gap:10px; padding-top:10px;">
+        <a href="https://calil.jp/book/${b[6]}" target="_blank" style="font-size:0.7rem; text-decoration:none; color:blue;">カーリル</a>
+        <span onclick="deleteLocal('${b[6]}','${b[0]}')" style="font-size:0.7rem; color:red; cursor:pointer;">削除</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-    async function saveProcess(book) {
-        // [題名, 著者, 出版社, 価格, ジャンル, 概要, ISBN, (UserEmail)]
-        const newRow = [book.title, book.author, book.publisher, "", book.genre, "", book.isbn, "Wait sync..."];
-        allBooks = [...allBooks, newRow];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allBooks));
-        renderBooks(allBooks);
-        document.getElementById("preview").style.display = "none";
-        
-        // GAS側へ送信
-        fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify(book) });
-    }
+async function fetchInfo(isbn) {
+  const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
+  const data = await res.json();
+  if (data && data[0]) {
+    const s = data[0].summary;
+    document.getElementById("preview").style.display = "block";
+    document.getElementById("pre-title").innerText = s.title;
+    document.getElementById("pre-author").innerText = s.author;
+    document.getElementById("btn-save").onclick = () => saveProcess({ ...s, isbn, genre: document.getElementById("edit-genre").value });
+  }
+}
 
-    async function manualRegister() {
-        const isbn = document.getElementById('manual-isbn').value.replace(/\D/g, "");
-        if (isbn.length === 13) { fetchInfo(isbn); document.getElementById('manual-isbn').value = ""; }
-        else { alert("13桁のISBNを入力してください"); }
-    }
+async function saveProcess(book) {
+  document.getElementById("preview").style.display = "none";
+  // mode: 'no-cors' で送信エラーを回避
+  fetch(GAS_ENDPOINT, { method: "POST", mode: "no-cors", body: JSON.stringify(book) });
+  setTimeout(init, 2000); // 2秒後に再取得
+}
 
-    function filterBooks() {
-        const q = document.getElementById("searchInput").value.toLowerCase();
-        renderBooks(allBooks.filter(b => b.join('').toLowerCase().includes(q)));
-    }
+function manualRegister() {
+  const i = document.getElementById('manual-isbn').value.replace(/\D/g, "");
+  if (i.length === 13) fetchInfo(i);
+}
 
-    async function deleteLocal(isbn, title) {
-        if (!confirm(title + " を削除しますか？")) return;
-        allBooks = allBooks.filter(b => b[6] !== isbn || b[0] !== title);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allBooks));
-        renderBooks(allBooks);
-        fetch(GAS_ENDPOINT, { method: "POST", body: JSON.stringify({ action: "delete", isbn, title }) });
-    }
+async function deleteLocal(isbn, title) {
+  if (!confirm(title + "を削除?")) return;
+  fetch(GAS_ENDPOINT, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "delete", isbn, title }) });
+  setTimeout(init, 2000);
+}
 
-    const scanBtn = document.getElementById('scan-toggle');
-    let html5QrCode = null;
-    let isScanning = false;
-    scanBtn.addEventListener('click', async () => {
-        if (!isScanning) {
-            document.getElementById('reader').style.display = 'block';
-            html5QrCode = html5QrCode || new Html5Qrcode("reader");
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 280 }, (txt) => {
-                const clean = txt.replace(/\D/g, "");
-                if (clean.length === 13) { 
-                    html5QrCode.stop(); document.getElementById('reader').style.display = 'none';
-                    isScanning = false; scanBtn.innerText = "📷 スキャン開始";
-                    fetchInfo(clean); 
-                }
-            });
-            isScanning = true; scanBtn.innerText = "🛑 停止";
-        } else {
-            await html5QrCode.stop(); document.getElementById('reader').style.display = 'none';
-            isScanning = false; scanBtn.innerText = "📷 スキャン開始";
-        }
+// カメラ制御
+const scanBtn = document.getElementById('scan-toggle');
+let html5QrCode = new Html5Qrcode("reader");
+let isScanning = false;
+scanBtn.onclick = async () => {
+  if (!isScanning) {
+    document.getElementById('reader').style.display = 'block';
+    await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+      const c = txt.replace(/\D/g, "");
+      if (c.length === 13) { html5QrCode.stop(); fetchInfo(c); isScanning = false; document.getElementById('reader').style.display = 'none'; }
     });
+    isScanning = true;
+  } else { await html5QrCode.stop(); isScanning = false; document.getElementById('reader').style.display = 'none'; }
+};
 
-    init();
+init();
 </script>
 </body>
 </html>

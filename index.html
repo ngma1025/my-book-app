@@ -4,29 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>蔵書管理 Pro (GitHub Edition)</title>
+    <!-- QRコードリーダーのライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-    <style>
-        :root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; line-height: 1.5; }
-        .container { max-width: 850px; margin: auto; }
-        .section { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h2 { margin-top: 0; font-size: 1.1rem; border-left: 5px solid var(--primary); padding-left: 12px; }
-        .ctrl-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-start { background: var(--primary); color: white; }
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; margin-top: 15px; }
-        .input-group { display: flex; gap: 8px; margin-top: 15px; }
-        .search-box { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
-        #preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 20px; border-radius: 14px; margin-top: 15px; }
-        .edit-select { width: 100%; padding: 12px; border: 2px solid #bae6fd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; background: white; }
-        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
-        .book-card { background: white; padding: 18px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; min-height: 160px; }
-        .genre-badge { display: inline-block; padding: 3px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; margin-bottom: 10px; align-self: flex-start; }
-        /* ジャンル色定義 */
-        .badge-科学 { background: #dcfce7; color: #166534; } .badge-工学 { background: #fee2e2; color: #991b1b; }
-        .badge-歴史 { background: #fef3c7; color: #92400e; } .badge-社会 { background: #e0f2fe; color: #075985; }
-        .badge-文学 { background: #f3e8ff; color: #6b21a8; } .badge-実用 { background: #ffedd5; color: #9a3412; }
-        .badge-その他 { background: #f1f5f9; color: #475569; }
-    </style>
+    <!-- 分割したCSSを読み込む -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -56,89 +37,7 @@
     </div>
 </div>
 
-<script>
-// --- ここにGASのURLを貼り付けてください ---
-const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxq_JIV-tLFuWyAlQznonBkPS64oGMhqojCrGTrnNwCV9wZL7BjC3nMkLG_0EDVBDJ7CA/exec";
-const STORAGE_KEY = "book_pro_cache_v70";
-let allBooks = [];
-
-async function init() {
-  allBooks = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  renderBooks(allBooks);
-  try {
-    const res = await fetch(GAS_ENDPOINT + "?action=getData");
-    const data = await res.json();
-    if (data && data.length > 0) {
-      allBooks = data.slice(1);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(allBooks));
-      renderBooks(allBooks);
-      document.getElementById('sync-status').innerText = "Synced ✅";
-    }
-  } catch (e) { document.getElementById('sync-status').innerText = "Offline Mode"; }
-}
-
-function renderBooks(books) {
-  const list = document.getElementById("book-list");
-  list.innerHTML = [...books].reverse().map(b => {
-    const g = b[4] || 'その他';
-    return `<div class="book-card">
-      <span class="genre-badge badge-${g}">${g}</span>
-      <div style="font-weight:bold">${b[0]}</div>
-      <div style="font-size:0.8rem; color:#64748b;">${b[1]}</div>
-      <div style="margin-top:auto; display:flex; gap:10px; padding-top:10px;">
-        <a href="https://calil.jp/book/${b[6]}" target="_blank" style="font-size:0.7rem; text-decoration:none; color:blue;">カーリル</a>
-        <span onclick="deleteLocal('${b[6]}','${b[0]}')" style="font-size:0.7rem; color:red; cursor:pointer;">削除</span>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function fetchInfo(isbn) {
-  const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
-  const data = await res.json();
-  if (data && data[0]) {
-    const s = data[0].summary;
-    document.getElementById("preview").style.display = "block";
-    document.getElementById("pre-title").innerText = s.title;
-    document.getElementById("pre-author").innerText = s.author;
-    document.getElementById("btn-save").onclick = () => saveProcess({ ...s, isbn, genre: document.getElementById("edit-genre").value });
-  }
-}
-
-async function saveProcess(book) {
-  document.getElementById("preview").style.display = "none";
-  // mode: 'no-cors' で送信エラーを回避
-  fetch(GAS_ENDPOINT, { method: "POST", mode: "no-cors", body: JSON.stringify(book) });
-  setTimeout(init, 2000); // 2秒後に再取得
-}
-
-function manualRegister() {
-  const i = document.getElementById('manual-isbn').value.replace(/\D/g, "");
-  if (i.length === 13) fetchInfo(i);
-}
-
-async function deleteLocal(isbn, title) {
-  if (!confirm(title + "を削除?")) return;
-  fetch(GAS_ENDPOINT, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "delete", isbn, title }) });
-  setTimeout(init, 2000);
-}
-
-// カメラ制御
-const scanBtn = document.getElementById('scan-toggle');
-let html5QrCode = new Html5Qrcode("reader");
-let isScanning = false;
-scanBtn.onclick = async () => {
-  if (!isScanning) {
-    document.getElementById('reader').style.display = 'block';
-    await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-      const c = txt.replace(/\D/g, "");
-      if (c.length === 13) { html5QrCode.stop(); fetchInfo(c); isScanning = false; document.getElementById('reader').style.display = 'none'; }
-    });
-    isScanning = true;
-  } else { await html5QrCode.stop(); isScanning = false; document.getElementById('reader').style.display = 'none'; }
-};
-
-init();
-</script>
+<!-- 分割したJavaScriptを読み込む (必ずbodyの最後で読み込む) -->
+<script src="script.js"></script>
 </body>
 </html>

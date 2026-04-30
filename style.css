@@ -1,0 +1,66 @@
+/* --- ベースデザイン (元の数値を維持) --- */
+:root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; }
+body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; line-height: 1.5; }
+.container { max-width: 850px; margin: auto; }
+.section { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+h2 { margin-top: 0; font-size: 1.1rem; border-left: 5px solid var(--primary); padding-left: 12px; }
+
+/* スキャン・登録ボタン */
+.ctrl-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+.btn-start { background: var(--primary); color: white; }
+.ctrl-btn:active { transform: scale(0.98); }
+
+/* 入力・プレビューエリア */
+#reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; margin-top: 15px; }
+.input-group { display: flex; gap: 8px; margin-top: 15px; }
+.search-box { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
+#preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 20px; border-radius: 14px; margin-top: 15px; }
+.edit-select { width: 100%; padding: 12px; border: 2px solid #bae6fd; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; background: white; }
+
+/* --- 本のカード表示 (洗練版) --- */
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+.book-card { 
+    background: white; 
+    padding: 18px; 
+    border-radius: 14px; 
+    border: 1px solid #e2e8f0; 
+    display: flex; 
+    flex-direction: column; 
+    min-height: 160px; 
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* ホバー時の動き */
+.book-card:hover { 
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 15px rgba(0,0,0,0.08); 
+    border-color: var(--primary); 
+}
+
+/* ジャンルバッジ (枠線あり) */
+.genre-badge { display: inline-block; padding: 3px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; margin-bottom: 10px; align-self: flex-start; border: 1px solid; }
+.badge-科学 { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.badge-工学 { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.badge-歴史 { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.badge-社会 { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+.badge-文学 { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+.badge-実用 { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+.badge-その他 { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+/* カード内アクションボタン */
+.card-actions { margin-top: auto; display: flex; gap: 8px; padding-top: 10px; }
+.card-btn { 
+    flex: 1; padding: 7px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; 
+    text-align: center; text-decoration: none; border: 1px solid; cursor: pointer; 
+    transition: all 0.2s; 
+}
+.btn-blue { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.btn-red { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.card-btn:hover { filter: brightness(0.95); transform: scale(1.03); }
+
+/* 同期ステータスバッジ */
+#sync-status { 
+    font-size: 0.7rem; font-weight: bold; padding: 3px 10px; border-radius: 20px; 
+    background: #e2e8f0; color: #475569; float: right; transition: all 0.4s; 
+}
+#sync-status.online { background: #dcfce7; color: #15803d; }

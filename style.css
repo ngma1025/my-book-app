@@ -1,263 +1,56 @@
-/* --- 変数とベース設定 --- */
 :root {
-    --primary: #2563eb;    /* メインの青色 */
-    --bg: #f1f5f9;         /* 背景の薄いグレー */
-    --card: #ffffff;       /* カードの白色[cite: 3] */
-    --text-main: #1e293b;  /* メイン文字色[cite: 3] */
-    --text-sub: #64748b;   /* 補足文字色[cite: 3] */
-    --border: #e2e8f0;     /* 境界線[cite: 3] */
+    --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff;
+    --text-main: #1e293b; --text-sub: #64748b; --border: #e2e8f0;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--bg);
-    margin: 0;
-    padding: 15px;
-    color: var(--text-main);
-    line-height: 1.6;
+    font-family: -apple-system, sans-serif;
+    background-color: var(--bg); margin: 0; padding: 15px; color: var(--text-main);
 }
 
-.container {
-    max-width: 850px;
-    margin: auto;
-}
+.container { max-width: 850px; margin: auto; }
+.section { background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+h2 { font-size: 1.1rem; border-left: 5px solid var(--primary); padding-left: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-/* --- セクションのデザイン --- */
-.section {
-    background: var(--card);
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
-
-h2 {
-    margin-top: 0;
-    font-size: 1.1rem;
-    border-left: 5px solid var(--primary);
-    padding-left: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* --- フィルターバー (追加) --- */
+/* フィルターバー[cite: 8] */
 .filter-bar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    background: #f8fafc; /* 少し明るいグレー[cite: 3] */
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    flex-wrap: wrap; /* スマホで折り返す設定 */
+    display: flex; gap: 12px; margin-bottom: 20px; background: #f8fafc; padding: 15px;
+    border-radius: 12px; border: 1px solid var(--border); flex-wrap: wrap;
 }
+.filter-item { flex: 1; min-width: 140px; }
+.filter-item .edit-select { margin-bottom: 0; margin-top: 4px; height: 42px; }
 
-.filter-item {
-    flex: 1;
-    min-width: 140px;
-}
+/* ボタン類[cite: 8] */
+.ctrl-btn, .btn-start { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-start { background: var(--primary); color: white; }
+.input-group { display: flex; gap: 8px; margin-top: 15px; }
+.search-box { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 1rem; }
 
-.filter-item .edit-select {
-    margin-bottom: 0; 
-    margin-top: 4px;
-    height: 42px;
-}
+#reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: none; margin-top: 15px; }
+#preview { display: none; background: #f0f9ff; border: 2px solid #bae6fd; padding: 20px; border-radius: 14px; margin-top: 15px; }
+.input-label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-sub); margin-bottom: 5px; }
+.edit-select { width: 100%; padding: 10px; border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; }
 
-/* --- 入力・ボタン類 --- */
-.ctrl-btn {
-    width: 100%;
-    padding: 14px;
-    border-radius: 12px;
-    border: none;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
+/* カード一覧[cite: 8] */
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+.book-card { background: white; padding: 18px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; min-height: 180px; transition: transform 0.2s; }
+.badge-container { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.genre-badge, .user-badge { padding: 3px 12px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; border: 1px solid; }
 
-.btn-start {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-start:active {
-    transform: scale(0.98);
-    filter: brightness(0.9);
-}
-
-.input-group {
-    display: flex;
-    gap: 8px;
-    margin-top: 15px;
-}
-
-.search-box {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    box-sizing: border-box;
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.search-box:focus {
-    border-color: var(--primary);
-}
-
-#reader {
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #000;
-    display: none;
-    margin-top: 15px;
-}
-
-/* --- プレビューエリア --- */
-#preview {
-    display: none;
-    background: #f0f9ff;
-    border: 2px solid #bae6fd;
-    padding: 20px;
-    border-radius: 14px;
-    margin-top: 15px;
-}
-
-.input-label {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: var(--text-sub);
-    margin-bottom: 5px;
-}
-
-.edit-select {
-    width: 100%;
-    padding: 10px;
-    border: 2px solid #cbd5e1;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    font-size: 1rem;
-    background: white;
-}
-
-/* --- 本のカード一覧 --- */
-.book-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-}
-
-.book-card {
-    background: white;
-    padding: 18px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    min-height: 180px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.book-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    border-color: var(--primary);
-}
-
-/* --- バッジシステム (ジャンル & 登録者) --- */
-.badge-container {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-}
-
-.genre-badge, .user-badge {
-    display: inline-block;
-    padding: 3px 12px;
-    border-radius: 99px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    border: 1px solid;
-}
-
-/* ジャンル別カラー[cite: 3] */
+/* カラー定義[cite: 8] */
 .badge-科学 { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
 .badge-工学 { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-.badge-歴史 { background: #fef3c7; color: #92400e; border-color: #fde68a; }
-.badge-社会 { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
-.badge-文学 { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
-.badge-実用 { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
 .badge-その他 { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
-
-/* 登録者(UserName)別カラー[cite: 3] */
-.badge-Dai   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.badge-Dai { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 .badge-Naoko { background: #fdf2f8; color: #9d174d; border-color: #fbcfe8; }
-.badge-Kyota { background: #fff7ed; color: #9a3412; border-color: #ffedd5; }
-.badge-All   { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
 
-/* --- カード内ボタン --- */
-.card-actions {
-    margin-top: auto;
-    display: flex;
-    gap: 8px;
-    padding-top: 15px;
-}
+.card-actions { margin-top: auto; display: flex; gap: 8px; padding-top: 15px; }
+.card-btn { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; border: 1px solid; cursor: pointer; }
+.btn-blue { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+.btn-red { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.btn-green { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 
-.card-btn {
-    flex: 1;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-align: center;
-    text-decoration: none;
-    border: 1px solid;
-    cursor: pointer;
-    transition: all 0.2s;
-}
+#sync-status { font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; background: #e2e8f0; }
+#sync-status.online { background: #dcfce7 !important; color: #15803d !important; }
 
-.btn-blue {
-    background: #eff6ff;
-    color: var(--primary);
-    border-color: #bfdbfe;
-}
-
-.btn-red {
-    background: #fef2f2;
-    color: #dc2626;
-    border-color: #fecaca;
-}
-
-/* --- 同期ステータス --- */
-#sync-status {
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 4px 12px;
-    border-radius: 20px;
-    background: #e2e8f0;
-    color: var(--text-sub);
-}
-
-/* オンライン時の色指定 */
-#sync-status.online {
-    background: #dcfce7 !important;
-    color: #15803d !important;
-}
-
-/* スマホ向け微調整 */
-@media (max-width: 480px) {
-    body { padding: 10px; }
-    .section { padding: 15px; }
-    .book-grid { grid-template-columns: 1fr; }
-    .filter-bar { padding: 10px; gap: 8px; }
-}
+@media (max-width: 480px) { .book-grid { grid-template-columns: 1fr; } }

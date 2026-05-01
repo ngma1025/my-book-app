@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>蔵書管理 Pro</title>
-    <!-- QRコードリーダーライブラリの読み込み -->
+    <!-- QRコードリーダーライブラリの読み込み[cite: 6] -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-    <!-- 外部CSSの読み込み -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,22 +14,16 @@
     <!-- 上段：スキャン・登録セクション -->
     <div class="section">
         <h2>蔵書スキャナー <span id="sync-status">Wait...</span></h2>
-        
-        <!-- スキャン開始ボタン -->
         <button id="scan-toggle" class="ctrl-btn btn-start">📷 スキャン開始</button>
-        
-        <!-- カメラ表示エリア -->
         <div id="reader"></div>
         
-        <!-- 手動入力エリア -->
         <div class="input-group">
             <input type="text" id="manual-isbn" class="search-box" style="flex:2" placeholder="ISBNを手動入力">
             <button onclick="manualRegister()" class="btn-start" style="flex:1; border-radius:10px; border:none; color:white; cursor:pointer;">登録</button>
         </div>
 
-        <!-- 登録前プレビューエリア（スキャン成功時に表示） -->
+        <!-- 登録・編集用プレビューエリア[cite: 6] -->
         <div id="preview">
-            <!-- ジャンル選択プルダウン -->
             <label class="input-label">ジャンル</label>
             <select id="edit-genre" class="edit-select">
                 <option value="科学">科学</option>
@@ -42,60 +35,55 @@
                 <option value="その他" selected>その他</option>
             </select>
 
-            <!-- 登録者選択プルダウン -->
             <label class="input-label">登録者</label>
-            <select id="edit-user" class="edit-select" style="border-color: #cbd5e1;">
+            <select id="edit-user" class="edit-select">
                 <option value="Dai">👤 Dai</option>
                 <option value="Naoko">👤 Naoko</option>
                 <option value="Kyota">👤 Kyota</option>
             </select>
 
-            <!-- 本の詳細情報表示 -->
             <div id="pre-title" style="font-weight:bold; font-size:1.1rem; margin-top:10px;"></div>
             <div id="pre-author" style="color:#64748b; font-size:0.9rem;"></div>
-            <!-- 出版社表示エリア -->
             <div id="pre-publisher" style="font-size:0.8rem; color:#64748b; margin-bottom:15px;"></div>
             
             <button id="btn-save" class="btn-start" style="width:100%;">確定して保存</button>
         </div>
     </div>
 
-<!-- 下段：登録済み一覧セクション -->
-<div class="section">
-    <h2>登録済み一覧</h2>
-    
-    <!-- 🔽 追加：フィルターバー 🔽 -->
-    <div class="filter-bar">
-        <div class="filter-item">
-            <label class="input-label">ジャンルで絞り込み</label>
-            <select id="filter-genre" class="edit-select" onchange="applyFilters()">
-                <option value="All">すべて</option>
-                <option value="科学">科学</option>
-                <option value="工学">工学</option>
-                <option value="歴史">歴史</option>
-                <option value="社会">社会</option>
-                <option value="文学">文学</option>
-                <option value="実用">実用</option>
-                <option value="その他">その他</option>
-            </select>
-        </div>
-        <div class="filter-item">
-            <label class="input-label">登録者で絞り込み</label>
-            <select id="filter-user" class="edit-select" onchange="applyFilters()">
-                <option value="All">全員</option>
-                <option value="Dai">👤 Dai</option>
-                <option value="Naoko">👤 Naoko</option>
-                <option value="Kyota">👤 Kyota</option>
-            </select>
-        </div>
-    </div>
-    <!-- 🔼 追加ここまで 🔼 -->
+    <!-- 下段：登録済み一覧セクション -->
+    <div class="section">
+        <h2>登録済み一覧</h2>
 
-    <!-- JavaScriptによってカードが生成される場所 -->
-    <div id="book-list" class="book-grid"></div>
+        <!-- フィルタリングコントロール[cite: 6] -->
+        <div class="filter-bar">
+            <div class="filter-item">
+                <label class="input-label">ジャンルで絞り込み</label>
+                <select id="filter-genre" class="edit-select" onchange="applyFilters()">
+                    <option value="All">すべて</option>
+                    <option value="科学">科学</option>
+                    <option value="工学">工学</option>
+                    <option value="歴史">歴史</option>
+                    <option value="社会">社会</option>
+                    <option value="文学">文学</option>
+                    <option value="実用">実用</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label class="input-label">登録者で絞り込み</label>
+                <select id="filter-user" class="edit-select" onchange="applyFilters()">
+                    <option value="All">全員</option>
+                    <option value="Dai">👤 Dai</option>
+                    <option value="Naoko">👤 Naoko</option>
+                    <option value="Kyota">👤 Kyota</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="book-list" class="book-grid"></div>
+    </div>
 </div>
 
-<!-- 外部JavaScriptの読み込み -->
 <script src="script.js"></script>
 </body>
 </html>

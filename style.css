@@ -54,3 +54,10 @@ h2 { font-size: 1.1rem; border-left: 5px solid var(--primary); padding-left: 12p
 #sync-status.online { background: #dcfce7 !important; color: #15803d !important; }
 
 @media (max-width: 480px) { .book-grid { grid-template-columns: 1fr; } }
+
+.status-badge { padding: 3px 12px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; border: 1px solid; }
+.badge-購入読了 { background: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+.badge-購入未読 { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
+.badge-図書館読了 { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+.badge-予約待ち { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+.badge-未設定 { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }

@@ -59,8 +59,8 @@ function renderBooks(booksToRender) {
       <div class="book-card">
         <div class="badge-container">
           <span class="genre-badge badge-${g}">${g}</span>
-          <span class="user-badge badge-${u}">${u}</span>
           <span class="status-badge badge-${s}">${s}</span>
+          <span class="user-badge badge-${u}">${u}</span>
         </div>
         <div style="font-weight:bold; color:#1e293b; font-size:0.95rem;">${b[0]}</div>
         <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">${b[1]}</div>

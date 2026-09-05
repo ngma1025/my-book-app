@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>蔵書管理 Pro</title>
-    <!-- QRコードリーダーライブラリの読み込み[cite: 6] -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <!-- 上段：スキャン・登録セクション -->
     <div class="section">
         <h2>蔵書スキャナー <span id="sync-status">Wait...</span></h2>
         <button id="scan-toggle" class="ctrl-btn btn-start">📷 スキャン開始</button>
@@ -22,7 +20,6 @@
             <button onclick="manualRegister()" class="btn-start" style="flex:1; border-radius:10px; border:none; color:white; cursor:pointer;">登録</button>
         </div>
 
-        <!-- 登録・編集用プレビューエリア[cite: 6] -->
         <div id="preview">
             <label class="input-label">ジャンル</label>
             <select id="edit-genre" class="edit-select">
@@ -42,6 +39,14 @@
                 <option value="Kyota">👤 Kyota</option>
             </select>
 
+            <label class="input-label">状態</label>
+            <select id="edit-status" class="edit-select">
+                <option value="購入読了" selected>購入読了</option>
+                <option value="購入未読">購入未読</option>
+                <option value="図書館読了">図書館読了</option>
+                <option value="予約待ち">予約待ち</option>
+            </select>
+
             <div id="pre-title" style="font-weight:bold; font-size:1.1rem; margin-top:10px;"></div>
             <div id="pre-author" style="color:#64748b; font-size:0.9rem;"></div>
             <div id="pre-publisher" style="font-size:0.8rem; color:#64748b; margin-bottom:15px;"></div>
@@ -50,11 +55,9 @@
         </div>
     </div>
 
-    <!-- 下段：登録済み一覧セクション -->
     <div class="section">
         <h2>登録済み一覧</h2>
 
-        <!-- フィルタリングコントロール[cite: 6] -->
         <div class="filter-bar">
             <div class="filter-item">
                 <label class="input-label">ジャンルで絞り込み</label>
@@ -76,6 +79,16 @@
                     <option value="Dai">👤 Dai</option>
                     <option value="Naoko">👤 Naoko</option>
                     <option value="Kyota">👤 Kyota</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label class="input-label">状態で絞り込み</label>
+                <select id="filter-status" class="edit-select" onchange="applyFilters()">
+                    <option value="All">すべて</option>
+                    <option value="購入読了">購入読了</option>
+                    <option value="購入未読">購入未読</option>
+                    <option value="図書館読了">図書館読了</option>
+                    <option value="予約待ち">予約待ち</option>
                 </select>
             </div>
         </div>

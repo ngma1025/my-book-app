@@ -1,23 +1,20 @@
 // --- 設定 ---
-const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxq_JIV-tLFuWyAlQznonBkPS64oGMhqojCrGTrnNwCV9wZL7BjC3nMkLG_0EDVBDJ7CA/exec";
-const STORAGE_KEY = "book_pro_cache_v80";
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzCa65ldqllmQS2Yxq1VbaU2ygtdQHLT7KhsvgJbyKWLP6LSpqZO_ahPVXltb2PkwS8vg/exec";
+const STORAGE_KEY = "book_pro_cache_v2_0";
 let allBooks = []; 
 
-/**
- * 1. 初期化
- */
 async function init() {
   const statusEl = document.getElementById('sync-status');
   const cache = localStorage.getItem(STORAGE_KEY);
   allBooks = cache ? JSON.parse(cache) : [];
   
-  applyFilters(); // 初回描画[cite: 7]
+  applyFilters(); 
   
   try {
     const res = await fetch(GAS_ENDPOINT);
     const data = await res.json();
     if (Array.isArray(data)) {
-      allBooks = data.slice(1); // ヘッダー除外[cite: 7]
+      allBooks = data.slice(1); 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allBooks));
       applyFilters();
       statusEl.innerText = "ONLINE ✅";
@@ -29,25 +26,21 @@ async function init() {
   }
 }
 
-/**
- * 2. フィルタリング処理
- */
 function applyFilters() {
   const genreVal = document.getElementById('filter-genre').value;
   const userVal = document.getElementById('filter-user').value;
+  const statusVal = document.getElementById('filter-status').value; 
 
   const filtered = allBooks.filter(b => {
-    const matchGenre = (genreVal === "All") || (b[4] === genreVal); // E列:ジャンル[cite: 4]
-    const matchUser = (userVal === "All") || (b[7] === userVal);  // H列:登録者[cite: 4]
-    return matchGenre && matchUser;
+    const matchGenre = (genreVal === "All") || (b[4] === genreVal); 
+    const matchUser = (userVal === "All") || (b[7] === userVal);    
+    const matchStatus = (statusVal === "All") || (b[8] === statusVal); 
+    return matchGenre && matchUser && matchStatus;
   });
 
   renderBooks(filtered);
 }
 
-/**
- * 3. 一覧の描画
- */
 function renderBooks(booksToRender) {
   const list = document.getElementById("book-list");
   if (!list) return;
@@ -60,12 +53,14 @@ function renderBooks(booksToRender) {
   list.innerHTML = [...booksToRender].reverse().map(b => {
     const g = b[4] || 'その他';
     const u = b[7] || 'All';
+    const s = b[8] || '未設定'; 
     
     return `
       <div class="book-card">
         <div class="badge-container">
           <span class="genre-badge badge-${g}">${g}</span>
           <span class="user-badge badge-${u}">${u}</span>
+          <span class="status-badge badge-${s}">${s}</span>
         </div>
         <div style="font-weight:bold; color:#1e293b; font-size:0.95rem;">${b[0]}</div>
         <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">${b[1]}</div>
@@ -73,17 +68,14 @@ function renderBooks(booksToRender) {
         
         <div class="card-actions">
           <a href="https://calil.jp/book/${b[6]}" target="_blank" class="card-btn btn-blue">🔍 検索</a>
-          <div onclick="openEdit('${b[6]}','${b[0]}','${g}','${u}')" class="card-btn btn-green">🔧 編集</div>
+          <div onclick="openEdit('${b[6]}','${b[0]}','${g}','${u}','${s}')" class="card-btn btn-green">🔧 編集</div>
           <div onclick="deleteLocal('${b[6]}','${b[0]}')" class="card-btn btn-red">🗑️ 削除</div>
         </div>
       </div>`;
   }).join('');
 }
 
-/**
- * 4. 編集モード開始
- */
-function openEdit(isbn, title, g, u) {
+function openEdit(isbn, title, g, u, s) {
   const preview = document.getElementById("preview");
   preview.style.display = "block";
   preview.scrollIntoView({ behavior: 'smooth' });
@@ -92,19 +84,22 @@ function openEdit(isbn, title, g, u) {
   document.getElementById("pre-author").innerText = "ISBN: " + isbn;
   document.getElementById("edit-genre").value = g;
   document.getElementById("edit-user").value = u;
+  
+  const statusEl = document.getElementById("edit-status");
+  if(Array.from(statusEl.options).some(opt => opt.value === s)) {
+      statusEl.value = s;
+  }
 
   document.getElementById("btn-save").onclick = () => updateProcess(isbn);
 }
 
-/**
- * 5. 更新・保存・削除処理
- */
 async function updateProcess(isbn) {
   const data = {
     action: "update",
     isbn: isbn,
     genre: document.getElementById("edit-genre").value,
-    userName: document.getElementById("edit-user").value
+    userName: document.getElementById("edit-user").value,
+    status: document.getElementById("edit-status").value 
   };
   document.getElementById("preview").style.display = "none";
   document.getElementById('sync-status').innerText = "UPDATING...";
@@ -113,6 +108,13 @@ async function updateProcess(isbn) {
 }
 
 async function fetchInfo(isbn) {
+  // 重複チェック
+  const isDuplicate = allBooks.some(b => b[6] && b[6].toString() === isbn.toString());
+  if (isDuplicate) {
+    alert("この書籍はすでに登録されています（ISBN: " + isbn + "）");
+    return;
+  }
+
   const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
   const data = await res.json();
   if (data && data[0]) {
@@ -124,8 +126,11 @@ async function fetchInfo(isbn) {
     document.getElementById("btn-save").onclick = () => saveProcess({ 
       ...s, isbn, 
       genre: document.getElementById("edit-genre").value,
-      userName: document.getElementById("edit-user").value 
+      userName: document.getElementById("edit-user").value,
+      status: document.getElementById("edit-status").value 
     });
+  } else {
+    alert("書籍情報が見つかりませんでした。");
   }
 }
 
@@ -147,7 +152,6 @@ function manualRegister() {
   else alert("ISBNを入力してください。");
 }
 
-// カメラ制御
 const scanBtn = document.getElementById('scan-toggle');
 let html5QrCode = new Html5Qrcode("reader");
 let isScanning = false;
@@ -157,7 +161,7 @@ scanBtn.onclick = async () => {
     scanBtn.innerText = "⏹️ 停止";
     await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
       const c = txt.replace(/\D/g, "");
-      if (c.length === 13) { html5QrCode.stop(); fetchInfo(c); isScanning = false; document.getElementById('reader').style.display = 'none'; scanBtn.innerText = "📷 開始"; }
+      if (c.length === 13) { html5QrCode.stop(); isScanning = false; document.getElementById('reader').style.display = 'none'; scanBtn.innerText = "📷 開始"; fetchInfo(c); }
     });
     isScanning = true;
   } else { await html5QrCode.stop(); isScanning = false; document.getElementById('reader').style.display = 'none'; scanBtn.innerText = "📷 開始"; }
